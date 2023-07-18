@@ -6,37 +6,19 @@ import {
   FormErrorMessage,
   FormHelperText,
   FormLabel,
-  HStack,
   Image,
   Input,
-  Modal,
-  ModalCloseButton,
-  ModalContent,
-  ModalOverlay,
   Text,
   VStack,
 } from "@chakra-ui/react";
 import { BadgeResponse } from "@steak-enjoyers/badges.js/types/codegen/Hub.types";
 import { bech32 } from "bech32";
 import { useEffect, useState } from "react";
-import { QrReader } from "react-qr-reader";
 import * as secp256k1 from "secp256k1";
 
-import ScanIcon from "./ScanIcon";
 import TxModal from "./TxModal";
 import { getTimestampInSeconds, formatTimestamp, sha256, hexToBytes, bytesToHex } from "../helpers";
 import { useStore } from "../store";
-
-// https://stackoverflow.com/questions/5214127/css-technique-for-a-horizontal-line-with-words-in-the-middle
-const hrStyle = {
-  bg: "rgb(226, 232, 240)",
-  content: `""`,
-  display: "inline-block",
-  height: "1px",
-  position: "relative",
-  verticalAlign: "middle",
-  width: "calc(50% - 0.5rem - 9px)",
-};
 
 const fillerImageUrl = "https://via.placeholder.com/500?text=Image+Not+Available";
 const fillerText = "Undefined";
@@ -67,9 +49,6 @@ export default function Claim() {
   const [owner, setOwner] = useState("");
   const [ownerValid, setOwnerValid] = useState<boolean | null>(null);
   const [ownerInvalidReason, setOwnerInvalidReason] = useState("");
-
-  // whether webcam modal is open on the credentials page
-  const { isOpen: isCameraOpen, onOpen: onCameraOpen, onClose: onCameraClose } = useDisclosure();
 
   // whether tx modal is open on the submit page
   const { isOpen: isTxModalOpen, onOpen: onTxModalOpen, onClose: onTxModalClose } = useDisclosure();
@@ -413,79 +392,6 @@ export default function Claim() {
   const credentialPage = (
     <Box>
       <Text mb="4">1️⃣ Enter your claim credentials</Text>
-      <Button w="100%" minH="8rem" onClick={onCameraOpen}>
-        <HStack>
-          <ScanIcon w="2.5rem" h="2.5rem" mr="2" />
-          <Text>Scan QR code</Text>
-        </HStack>
-      </Button>
-      <Modal isOpen={isCameraOpen} onClose={onCameraClose}>
-        <ModalOverlay />
-        <ModalContent bg="rgba(0,0,0,0)" boxShadow="" maxW="min(90%, 600px)" border="none">
-          <QrReader
-            constraints={{
-              facingMode: "environment",
-            }}
-            onResult={(result, _error) => {
-              if (!!result) {
-                const text = result.getText();
-
-                const split = text.split("?");
-                if (split.length !== 2) {
-                  return alert(`!! invalid QR !!\nnot a valid URL with a query string: ${text}`);
-                }
-
-                const params = new URLSearchParams(split[1]);
-                if (!(params.has("id") && params.has("key"))) {
-                  return alert(
-                    `!! invalid QR !!\nquery string does not contain both parameters "id" and "key"`
-                  );
-                }
-
-                setIdStr(params.get("id")!);
-                setPrivkeyStr(params.get("key")!);
-                onCameraClose();
-              }
-            }}
-            videoContainerStyle={{
-              padding: "0",
-              borderRadius: "var(--chakra-radii-lg)",
-              // TODO: The video takes a 1-2 seconds to load. At the mean time the box shadow is
-              // very ugly. Is there any way to delay the displaying of box shadow after the video
-              // is loaded?
-              boxShadow: "var(--chakra-shadows-dark-lg)",
-            }}
-            videoStyle={{
-              position: "relative",
-              borderRadius: "var(--chakra-radii-lg)",
-            }}
-          />
-          <ModalCloseButton
-            size="lg"
-            top="var(--chakra-space-3)"
-            fill="white"
-            bg="whiteAlpha.700"
-            _hover={{ bg: "whiteAlpha.800" }}
-            _active={{ bg: "whiteAlpha.900" }}
-          />
-        </ModalContent>
-      </Modal>
-      <Text
-        my="4"
-        _before={{
-          right: "0.5rem",
-          ml: "2",
-          ...hrStyle,
-        }}
-        _after={{
-          left: "0.5rem",
-          mr: "2",
-          ...hrStyle,
-        }}
-      >
-        or
-      </Text>
-      <Text mb="4">Enter manually:</Text>
       <FormControl mb="4" isInvalid={idValid !== null && !idValid}>
         <FormLabel>id</FormLabel>
         <Input
