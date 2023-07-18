@@ -27,7 +27,6 @@
     "@cosmjs/cosmwasm-stargate": "^0.28.13",
     "@cosmjs/proto-signing": "^0.28.13",
     "@cosmjs/stargate": "^0.28.13",
-    "@steak-enjoyers/badges.js": "^1.0.0",
     "bech32": "^2.0.0",
     "jscrypto": "^1.0.3",
     "next": "^12.2.5",

@@ -11,7 +11,6 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { BadgeResponse } from "@steak-enjoyers/badges.js/types/codegen/Hub.types";
 import { bech32 } from "bech32";
 import { useEffect, useState } from "react";
 import * as secp256k1 from "secp256k1";
@@ -19,6 +18,7 @@ import * as secp256k1 from "secp256k1";
 import TxModal from "./TxModal";
 import { getTimestampInSeconds, formatTimestamp, sha256, hexToBytes, bytesToHex } from "../helpers";
 import { useStore } from "../store";
+import { BadgeResponse } from "../types";
 
 const fillerImageUrl = "https://via.placeholder.com/500?text=Image+Not+Available";
 const fillerText = "Undefined";

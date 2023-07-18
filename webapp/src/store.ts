@@ -1,15 +1,10 @@
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { GasPrice } from "@cosmjs/stargate";
-import {
-  BadgesResponse,
-  BadgeResponse,
-  ConfigResponse,
-  KeyResponse,
-  OwnerResponse,
-} from "@steak-enjoyers/badges.js/types/codegen/Hub.types";
 import create from "zustand";
+
 import { Network, NetworkConfig, NETWORK_CONFIGS, PUBLIC_ACCOUNTS } from "./configs";
+import { BadgesResponse, BadgeResponse, ConfigResponse, KeyResponse, OwnerResponse } from "./types";
 
 export type State = {
   networkConfig?: NetworkConfig;
