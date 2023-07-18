@@ -1,0 +1,66 @@
+name: Rust
+
+on: push
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install Just
+        uses: extractions/setup-just@v1
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+
+      - name: Check for errors
+        run: just rust-check
+        env:
+          RUST_BACKTRACE: 1
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install Just
+        uses: extractions/setup-just@v1
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Run tests
+        run: just rust-test
+        env:
+          RUST_BACKTRACE: 1
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install Just
+        uses: extractions/setup-just@v1
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          components: clippy
+
+      - name: Run linter
+        run: just rust-lint
+        env:
+          RUST_BACKTRACE: 1
