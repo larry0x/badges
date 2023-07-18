@@ -6,7 +6,7 @@ version    = "1.2.0"
 authors    = ["larry <gm@larry.engineer>"]
 edition    = "2021"
 homepage   = "https://badges.fun"
-repository = "https://github.com/steak-enjoyers/badges"
+repository = "https://github.com/public-awesome/badges"
 license    = "GPL-3.0-or-later"
 keywords   = ["nft", "cosmos", "cosmwasm", "stargaze"]
 

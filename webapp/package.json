@@ -11,12 +11,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/st4k3h0us3/badges-webapp.git"
+    "url": "git+https://github.com/public-awesome/badges.git"
   },
   "bugs": {
-    "url": "https://github.com/st4k3h0us3/badges-webapp/issues"
+    "url": "https://github.com/public-awesome/badges/issues"
   },
-  "homepage": "https://github.com/st4k3h0us3/badges-webapp#readme",
+  "homepage": "https://github.com/public-awesome/badges#readme",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
