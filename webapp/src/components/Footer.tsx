@@ -9,13 +9,13 @@ export default function Footer() {
         <Box>
           Badges is a{" "}
           <Link fontWeight="700" href="https://larry.engineer">
-            Larry Engineer
+            larry0x
           </Link>{" "}
           project
         </Box>
         <Box>
           👉{" "}
-          <Link fontWeight="700" href="https://github.com/steak-enjoyers">
+          <Link fontWeight="700" href="https://github.com/public-awesome/badges">
             source code on GitHub
           </Link>
         </Box>
