@@ -46,7 +46,6 @@ export const useStore = create<State>((set) => ({
     console.log("created wallet with address", senderAddr);
 
     const wasmClient = await SigningCosmWasmClient.connectWithSigner(networkConfig.rpcUrl, wallet, {
-      prefix: networkConfig.prefix,
       gasPrice: GasPrice.fromString(networkConfig.gasPrices),
     });
 
