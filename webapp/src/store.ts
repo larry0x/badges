@@ -4,7 +4,7 @@ import { GasPrice } from "@cosmjs/stargate";
 import { create } from "zustand";
 
 import { Network, NetworkConfig, NETWORK_CONFIGS, PUBLIC_ACCOUNTS } from "./configs";
-import { BadgesResponse, BadgeResponse, ConfigResponse, KeyResponse, OwnerResponse } from "./types";
+import { BadgeResponse, ConfigResponse, KeyResponse, OwnerResponse } from "./types";
 
 export type State = {
   networkConfig?: NetworkConfig;
@@ -17,7 +17,6 @@ export type State = {
   badges: { [key: number]: BadgeResponse };
 
   init: () => Promise<void>;
-  getAllBadges: () => Promise<BadgesResponse>;
   getBadge: (id: number) => Promise<BadgeResponse>;
   isKeyWhitelisted: (id: number, privkeyStr: string) => Promise<boolean>;
   isOwnerEligible: (id: number, owner: string) => Promise<boolean>;
@@ -64,22 +63,6 @@ export const useStore = create<State>((set) => ({
       wasmClient,
       badgeCount: configRes.badge_count,
     });
-  },
-
-  getAllBadges: async function () {
-    const badgesResponse = (await this.wasmClient!.queryContractSmart(this.networkConfig!.hub, {
-      badges: {
-        limit: 30, // currently there are less than 30 badges in total so this works
-      },
-    })) as BadgesResponse;
-
-    for (const badge of badgesResponse.badges) {
-      this.badges[badge.id] = badge;
-    }
-
-    set({ badges: this.badges });
-
-    return { badges: Object.values(this.badges) };
   },
 
   getBadge: async function (id: number) {
