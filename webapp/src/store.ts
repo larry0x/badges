@@ -1,7 +1,7 @@
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { GasPrice } from "@cosmjs/stargate";
-import create from "zustand";
+import { create } from "zustand";
 
 import { Network, NetworkConfig, NETWORK_CONFIGS, PUBLIC_ACCOUNTS } from "./configs";
 import { BadgesResponse, BadgeResponse, ConfigResponse, KeyResponse, OwnerResponse } from "./types";
