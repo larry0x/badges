@@ -1,81 +1,32 @@
-import {
-  useDisclosure,
-  Box,
-  Button,
-  Drawer,
-  DrawerOverlay,
-  DrawerContent,
-  Flex,
-  HStack,
-  Spacer,
-  VStack,
-} from "@chakra-ui/react";
-import { useRef } from "react";
-
-import BurgerIcon from "./BurgerIcon";
-import CloseIcon from "./CloseIcon";
-import NavbarLink from "./NavbarLink";
-import NavbarLogo from "./NavbarLogo";
+import { Box, Heading, HStack, Image, Link } from "@chakra-ui/react";
 
 export default function Navbar() {
-  const { isOpen, onOpen, onClose } = useDisclosure();
-
-  // https://github.com/DefinitelyTyped/DefinitelyTyped/issues/35572#issuecomment-493942129
-  const btnRef = useRef() as React.MutableRefObject<HTMLButtonElement>;
-
   return (
     <Box w="100%" mb="4">
-      <Flex justify="space-between" align="center" pl="2" pr="0" py="4">
-        <NavbarLogo />
-        <Spacer />
-        <Button
-          variant="simple"
-          minH="3rem"
-          minW="3rem"
-          p="2"
-          _hover={{
-            background: "#e1ebff",
-          }}
-          ref={btnRef}
-          onClick={onOpen}
+      <HStack pl="2" py="4">
+        <Link
+          isExternal={true}
+          href="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+          // Wiggle animation is defined in the style tag in `../pages/_document.tsx`
+          // See: https://stackoverflow.com/questions/38132700/css-wiggle-shake-effect
+          animation="wiggle 2.5s infinite"
         >
-          <BurgerIcon h="1.5rem" w="1.5rem" color="black" />
-        </Button>
-      </Flex>
-      <Drawer
-        isOpen={isOpen}
-        onClose={onClose}
-        finalFocusRef={btnRef}
-        placement="left"
-        size="sm"
-        preserveScrollBarGap={true}
-      >
-        <DrawerOverlay />
-        <DrawerContent>
-          <HStack w="100%" px="12" py="4" align="stretch">
-            <NavbarLogo />
-            <Spacer></Spacer>
-            <Button
-              variant="simple"
-              onClick={onClose}
-              h="100%"
-              p="2"
-              transition="0.1s all"
-              _hover={{
-                background: "#e1ebff",
-              }}
-            >
-              <CloseIcon width="2.125rem" height="2.125rem" />
-            </Button>
-          </HStack>
-          <hr />
-          <VStack height="100%" px="12" mt="8" spacing="8" align="left">
-            <NavbarLink text="Claim" href="/" fontSize="xx-large" />
-            <NavbarLink text="Create" href="/create" fontSize="xx-large" disabled={true} />
-            <NavbarLink text="Gallery" href="/gallery" fontSize="xx-large" />
-          </VStack>
-        </DrawerContent>
-      </Drawer>
+          <Image
+            src="badges.gif"
+            alt="logo"
+            w="50px"
+            h="60px"
+            borderRadius="0"
+            transition="0.1s all"
+            _hover={{
+              transform: "scale(1.1)",
+            }}
+          />
+        </Link>
+        <Heading fontSize="3xl" fontFamily="Silkscreen" pt="2">
+          Badges
+        </Heading>
+      </HStack>
       <hr />
     </Box>
   );
