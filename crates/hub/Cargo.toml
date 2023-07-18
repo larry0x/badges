@@ -17,7 +17,7 @@ doctest    = false
 library = []
 
 [dependencies]
-badges          = { path = "../../packages/badges" }
+badges          = { path = "../badges" }
 cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true }
 cw-item-set     = { workspace = true }
