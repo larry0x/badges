@@ -11,15 +11,15 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { useChain } from '@cosmos-kit/react';
-import { TxRaw } from 'cosmjs-types/cosmos/tx/v1beta1/tx';
+import { useChain } from "@cosmos-kit/react";
+import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
 import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { useEffect, useState } from "react";
 import * as secp256k1 from "secp256k1";
 
 import TxModal from "./TxModal";
 import WalletSection from "./WalletSection";
-import { CHAIN_NAME } from '../configs';
+import { NETWORK_CONFIG } from "../configs";
 import { getTimestampInSeconds, formatTimestamp, sha256, hexToBytes, bytesToHex } from "../helpers";
 import { useStore } from "../store";
 import { BadgeResponse } from "../types";
@@ -35,7 +35,7 @@ enum Page {
 
 export default function Claim() {
   const store = useStore();
-  const { disconnect, address, sign } = useChain(CHAIN_NAME);
+  const { disconnect, address, getCosmWasmClient, sign } = useChain(NETWORK_CONFIG.name);
 
   // which page to display
   const [page, setPage] = useState(Page.Credential);
@@ -110,33 +110,30 @@ export default function Claim() {
     // stateful checks
     //--------------------
 
-    // skip if the query client isn't initialized
-    if (!store.wasmClient) {
-      return setIdValidNull();
-    }
+    getCosmWasmClient().then((wasmClient) => {
+      store.getBadge(wasmClient, id).then((badge) => {
+        if (badge.rule !== "by_keys" && !("by_key" in badge.rule)) {
+          return setIdValidFalse("id is valid but this badge is not publicly mintable!");
+        }
 
-    store.getBadge(id).then((badge) => {
-      if (badge.rule !== "by_keys" && !("by_key" in badge.rule)) {
-        return setIdValidFalse("id is valid but this badge is not publicly mintable!");
-      }
+        if (badge.expiry && getTimestampInSeconds() > badge.expiry) {
+          return setIdValidFalse(
+            `id is valid but minting deadline has already elapsed! (deadline: ${formatTimestamp(
+              badge.expiry
+            )})`
+          );
+        }
 
-      if (badge.expiry && getTimestampInSeconds() > badge.expiry) {
-        return setIdValidFalse(
-          `id is valid but minting deadline has already elapsed! (deadline: ${formatTimestamp(
-            badge.expiry
-          )})`
-        );
-      }
+        if (badge.max_supply && badge.current_supply >= badge.max_supply) {
+          return setIdValidFalse(
+            `id is valid but max supply has already been reached! (max supply: ${badge.max_supply})`
+          );
+        }
 
-      if (badge.max_supply && badge.current_supply >= badge.max_supply) {
-        return setIdValidFalse(
-          `id is valid but max supply has already been reached! (max supply: ${badge.max_supply})`
-        );
-      }
-
-      return setIdValidTrue();
+        return setIdValidTrue();
+      });
     });
-  }, [idStr, store.wasmClient]);
+  }, [idStr]);
 
   // whenever input key is changed, we need to validate it
   useEffect(() => {
@@ -186,11 +183,6 @@ export default function Claim() {
     // stateful checks
     //--------------------
 
-    // skip if the query client isn't initialized
-    if (!store.wasmClient) {
-      return setPrivkeyValidNull();
-    }
-
     // Now we know the key is a valid secp256k1 privkey, we need to check whether it is eligible for
     // claiming the badge.
     // Firstly, if we don't already have a valid badge id, it's impossible to determine to badge's
@@ -202,33 +194,35 @@ export default function Claim() {
     const pubkeyStr = bytesToHex(secp256k1.publicKeyCreate(hexToBytes(privkeyStr)));
 
     // this block of code is fucking atrocious, but "it just works"
-    store.getBadge(Number(idStr)).then((badge) => {
-      if (badge.rule === "by_keys") {
-        store
-          .isKeyWhitelisted(Number(idStr), pubkeyStr)
-          .then((isWhitelisted) => {
-            if (isWhitelisted) {
-              return setPrivkeyValidTrue();
-            } else {
-              return setPrivkeyValidFalse(`this key is not eligible to claim badge #${idStr}`);
-            }
-          })
-          .catch((err) => {
-            return setPrivkeyValidFalse(
-              `failed to check this key's eligibility to claim badge #${idStr}: ${err}`
-            );
-          });
-      } else if ("by_key" in badge.rule) {
-        if (pubkeyStr === badge.rule["by_key"]) {
-          return setPrivkeyValidTrue();
+    getCosmWasmClient().then((wasmClient) => {
+      store.getBadge(wasmClient, Number(idStr)).then((badge) => {
+        if (badge.rule === "by_keys") {
+          store
+            .isKeyWhitelisted(wasmClient, Number(idStr), pubkeyStr)
+            .then((isWhitelisted) => {
+              if (isWhitelisted) {
+                return setPrivkeyValidTrue();
+              } else {
+                return setPrivkeyValidFalse(`this key is not eligible to claim badge #${idStr}`);
+              }
+            })
+            .catch((err) => {
+              return setPrivkeyValidFalse(
+                `failed to check this key's eligibility to claim badge #${idStr}: ${err}`
+              );
+            });
+        } else if ("by_key" in badge.rule) {
+          if (pubkeyStr === badge.rule["by_key"]) {
+            return setPrivkeyValidTrue();
+          } else {
+            return setPrivkeyValidFalse(`this key is not eligible to claim badge #${idStr}`);
+          }
         } else {
           return setPrivkeyValidFalse(`this key is not eligible to claim badge #${idStr}`);
         }
-      } else {
-        return setPrivkeyValidFalse(`this key is not eligible to claim badge #${idStr}`);
-      }
-    });
-  }, [privkeyStr, idStr, idValid, store.wasmClient]);
+      });
+    })
+  }, [privkeyStr, idStr, idValid]);
 
   // whenver input owner address is changed, we need to validate it
   useEffect(() => {
@@ -262,11 +256,6 @@ export default function Claim() {
     // stateful checks
     //--------------------
 
-    // skip if the query client isn't initialized
-    if (!store.wasmClient) {
-      return setOwnerValidNull();
-    }
-
     // Now we know the owner is a valid bech32 address, we need to check whether it is eligible for
     // claiming the badge.
     // Firstly, if we don't already have a valid badge id, it's impossible to determine to badge's
@@ -275,44 +264,45 @@ export default function Claim() {
       return setOwnerValidNull();
     }
 
-    store
-      .isOwnerEligible(Number(idStr), address)
-      .then((eligible) => {
-        if (eligible) {
-          return setOwnerValidTrue();
-        } else {
-          return setOwnerValidFalse(`this address is not eligible to claim badge #${idStr}`);
-        }
-      })
-      .catch((err) => {
-        return setOwnerValidFalse(
-          `failed to check this address' eligibility to claim badge #${idStr}: ${err}`
-        );
-      });
-  }, [address, idStr, idValid, store.wasmClient]);
+    getCosmWasmClient().then((wasmClient) => {
+      store
+        .isOwnerEligible(wasmClient, Number(idStr), address)
+        .then((eligible) => {
+          if (eligible) {
+            return setOwnerValidTrue();
+          } else {
+            return setOwnerValidFalse(`this address is not eligible to claim badge #${idStr}`);
+          }
+        })
+        .catch((err) => {
+          return setOwnerValidFalse(
+            `failed to check this address' eligibility to claim badge #${idStr}: ${err}`
+          );
+        });
+    })
+  }, [address, idStr, idValid]);
 
   // if the id has been updated, we need to update the metadata displayed on the preview page
   // only update if the id is valid AND wasm client has been initialized
   useEffect(() => {
-    if (!store.wasmClient) {
-      console.log(`wasm client is uninitialized, setting badge to undefined`);
-      return setBadge(undefined);
-    }
     if (!idValid) {
       console.log(`invalid badge id "${idStr}", setting badge to undefined`);
       return setBadge(undefined);
     }
-    store
-      .getBadge(Number(idStr))
-      .then((badge) => {
-        console.log(`successfully fetched badge with id "${idStr}"! badge:`, badge);
-        setBadge(badge);
-      })
-      .catch((err) => {
-        console.log(`failed to fetch badge with id "${idStr}"! reason:`, err);
-        setBadge(undefined);
-      });
-  }, [idStr, idValid, store.wasmClient]);
+
+    getCosmWasmClient().then((wasmClient) => {
+      store
+        .getBadge(wasmClient, Number(idStr))
+        .then((badge) => {
+          console.log(`successfully fetched badge with id "${idStr}"! badge:`, badge);
+          setBadge(badge);
+        })
+        .catch((err) => {
+          console.log(`failed to fetch badge with id "${idStr}"! reason:`, err);
+          setBadge(undefined);
+        });
+    })
+  }, [idStr, idValid]);
 
   // when the component is first mounted, we check the URL query params and auto-fill id and key
   useEffect(() => {
@@ -349,7 +339,7 @@ export default function Claim() {
 
     // generate the contract execute msg
     let executeMsg: object;
-    const badge = await store.getBadge(Number(idStr));
+    const badge = await store.getBadge(await getCosmWasmClient(), Number(idStr));
     if (badge.rule === "by_keys") {
       executeMsg = {
         mint_by_keys: {
@@ -380,7 +370,7 @@ export default function Claim() {
       typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
       value: MsgExecuteContract.fromPartial({
         sender: address,
-        contract: store.networkConfig!.hub,
+        contract: NETWORK_CONFIG.hub,
         msg: executeMsgBytes,
         funds: [],
       }),

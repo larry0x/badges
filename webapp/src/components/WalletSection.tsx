@@ -1,11 +1,11 @@
-import { Box, Button, Center, HStack } from '@chakra-ui/react';
-import { useChain } from '@cosmos-kit/react';
-import { MouseEventHandler } from 'react';
+import { Box, Button, Center, HStack } from "@chakra-ui/react";
+import { useChain } from "@cosmos-kit/react";
+import { MouseEventHandler } from "react";
 
-import { CHAIN_NAME } from '../configs';
+import { NETWORK_CONFIG } from "../configs";
 
 export default function WalletSection() {
-  const { connect, disconnect, address, isWalletConnected } = useChain(CHAIN_NAME);
+  const { connect, disconnect, address, isWalletConnected } = useChain(NETWORK_CONFIG.name);
 
   const onClickConnect: MouseEventHandler = async (e) => {
     e.preventDefault();

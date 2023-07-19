@@ -1,15 +1,14 @@
 import { Box, Button, Flex, Link, Spinner, Text } from "@chakra-ui/react";
-import { TxRaw } from 'cosmjs-types/cosmos/tx/v1beta1/tx';
-import { useChain } from '@cosmos-kit/react';
+import { TxRaw } from "cosmjs-types/cosmos/tx/v1beta1/tx";
+import { useChain } from "@cosmos-kit/react";
 import { FC, useState, useEffect } from "react";
 
 import ModalWrapper from "./ModalWrapper";
 import SuccessIcon from "./TxSuccessIcon";
 import FailedIcon from "./TxFailedIcon";
 import ExternalLinkIcon from "./ExternalLinkIcon";
-import { CHAIN_NAME } from '../configs';
+import { NETWORK_CONFIG } from "../configs";
 import { truncateString } from "../helpers";
-import { useStore } from "../store";
 
 function SpinnerWrapper() {
   return (
@@ -59,8 +58,8 @@ type Props = {
 };
 
 const TxModal: FC<Props> = ({ tx, isOpen, onClose }) => {
-  const store = useStore();
-  const { broadcast } = useChain(CHAIN_NAME);
+  const { broadcast } = useChain(NETWORK_CONFIG.name);
+
   const [showCloseBtn, setShowCloseBtn] = useState<boolean>(false);
   const [txStatusHeader, setTxStatusHeader] = useState<string>();
   const [txStatusIcon, setTxStatusIcon] = useState<JSX.Element>();
@@ -82,7 +81,7 @@ const TxModal: FC<Props> = ({ tx, isOpen, onClose }) => {
           setTxStatusDetail(
             TxHashText(
               result.transactionHash,
-              store.networkConfig!.getExplorerUrl(result.transactionHash)
+              NETWORK_CONFIG.getExplorerUrl(result.transactionHash)
             )
           );
           setTxStatusIcon(<SuccessIcon h="80px" w="80px" />);
