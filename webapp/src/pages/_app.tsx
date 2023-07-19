@@ -23,6 +23,20 @@ const BadgesApp = ({ Component, pageProps }: AppProps) => {
       return undefined;
     },
   }
+
+  const walletConnectOptions = {
+    signClient: {
+      projectId: "51370e1183449abe68a677991c158c7b",
+      relayUrl: "wss://relay.walletconnect.org",
+      metadata: {
+        name: "Badges",
+        description: "Badge claim webapp",
+        url: "https://app.badges.fun",
+        icons: [],
+      },
+    },
+  };
+
   return (
     <ChakraProvider theme={theme}>
       <ChainProvider
@@ -31,6 +45,7 @@ const BadgesApp = ({ Component, pageProps }: AppProps) => {
         wallets={[...keplrWallets]}
         wrappedWithChakra={true}
         signerOptions={signerOptions}
+        walletConnectOptions={walletConnectOptions}
       >
         <Layout>
           <Component {...pageProps} />
