@@ -23,7 +23,7 @@ export default function WalletSection() {
 
   const connectButton = (
     <Button variant="outline" onClick={onClickConnect}>
-      Connect Keplr wallet
+      Please connect wallet
     </Button>
   );
 

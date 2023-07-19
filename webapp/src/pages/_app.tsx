@@ -1,6 +1,8 @@
 import { ChakraProvider } from "@chakra-ui/react";
 import { GasPrice } from "@cosmjs/stargate";
+import { wallets as cosmostationWallets } from "@cosmos-kit/cosmostation";
 import { wallets as keplrWallets } from "@cosmos-kit/keplr";
+import { wallets as leapWallets } from "@cosmos-kit/leap";
 import { ChainProvider } from "@cosmos-kit/react";
 import { Chain } from "@chain-registry/types";
 import { chains, assets } from "chain-registry";
@@ -42,7 +44,7 @@ const BadgesApp = ({ Component, pageProps }: AppProps) => {
       <ChainProvider
         chains={chains}
         assetLists={assets}
-        wallets={[...keplrWallets]}
+        wallets={[...cosmostationWallets, ...keplrWallets, ...leapWallets]}
         wrappedWithChakra={true}
         signerOptions={signerOptions}
         walletConnectOptions={walletConnectOptions}

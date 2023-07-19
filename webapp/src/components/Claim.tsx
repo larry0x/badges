@@ -228,7 +228,7 @@ export default function Claim() {
   useEffect(() => {
     function setOwnerValidNull() {
       setOwnerValid(null);
-      setOwnerInvalidReason("Please connect wallet");
+      setOwnerInvalidReason("");
       console.log("empty key");
     }
 
