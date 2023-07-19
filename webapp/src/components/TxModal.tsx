@@ -1,10 +1,13 @@
 import { Box, Button, Flex, Link, Spinner, Text } from "@chakra-ui/react";
+import { TxRaw } from 'cosmjs-types/cosmos/tx/v1beta1/tx';
+import { useChain } from '@cosmos-kit/react';
 import { FC, useState, useEffect } from "react";
 
 import ModalWrapper from "./ModalWrapper";
 import SuccessIcon from "./TxSuccessIcon";
 import FailedIcon from "./TxFailedIcon";
 import ExternalLinkIcon from "./ExternalLinkIcon";
+import { CHAIN_NAME } from '../configs';
 import { truncateString } from "../helpers";
 import { useStore } from "../store";
 
@@ -50,13 +53,14 @@ function CloseButton(showCloseBtn: boolean, onClick: () => void) {
 }
 
 type Props = {
-  getMsg: () => Promise<any>;
+  tx: TxRaw,
   isOpen: boolean;
   onClose: () => void;
 };
 
-const TxModal: FC<Props> = ({ getMsg, isOpen, onClose }) => {
+const TxModal: FC<Props> = ({ tx, isOpen, onClose }) => {
   const store = useStore();
+  const { broadcast } = useChain(CHAIN_NAME);
   const [showCloseBtn, setShowCloseBtn] = useState<boolean>(false);
   const [txStatusHeader, setTxStatusHeader] = useState<string>();
   const [txStatusIcon, setTxStatusIcon] = useState<JSX.Element>();
@@ -71,28 +75,18 @@ const TxModal: FC<Props> = ({ getMsg, isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
-      getMsg()
-        .then((msg) => {
-          console.log("created execute msg:", msg);
-          store
-            .wasmClient!.execute(store.senderAddr!, store.networkConfig!.hub, msg, "auto", "", [])
-            .then((result) => {
-              setTxStatusHeader("Transaction Successful");
-              setTxStatusDetail(
-                TxHashText(
-                  result.transactionHash,
-                  store.networkConfig!.getExplorerUrl(result.transactionHash)
-                )
-              );
-              setTxStatusIcon(<SuccessIcon h="80px" w="80px" />);
-              setShowCloseBtn(true);
-            })
-            .catch((error) => {
-              setTxStatusHeader("Transaction Failed");
-              setTxStatusIcon(<FailedIcon h="80px" w="80px" />);
-              setTxStatusDetail(TxFailedText(error));
-              setShowCloseBtn(true);
-            });
+      console.log("tx modal is opened. attempting to broadcast tx");
+      broadcast(tx, "cosmwasm")
+        .then((result) => {
+          setTxStatusHeader("Transaction Successful");
+          setTxStatusDetail(
+            TxHashText(
+              result.transactionHash,
+              store.networkConfig!.getExplorerUrl(result.transactionHash)
+            )
+          );
+          setTxStatusIcon(<SuccessIcon h="80px" w="80px" />);
+          setShowCloseBtn(true);
         })
         .catch((error) => {
           setTxStatusHeader("Transaction Failed");

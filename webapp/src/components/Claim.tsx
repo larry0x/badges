@@ -11,11 +11,15 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { bech32 } from "bech32";
+import { useChain } from '@cosmos-kit/react';
+import { TxRaw } from 'cosmjs-types/cosmos/tx/v1beta1/tx';
+import { MsgExecuteContract } from "cosmjs-types/cosmwasm/wasm/v1/tx";
 import { useEffect, useState } from "react";
 import * as secp256k1 from "secp256k1";
 
 import TxModal from "./TxModal";
+import WalletSection from "./WalletSection";
+import { CHAIN_NAME } from '../configs';
 import { getTimestampInSeconds, formatTimestamp, sha256, hexToBytes, bytesToHex } from "../helpers";
 import { useStore } from "../store";
 import { BadgeResponse } from "../types";
@@ -31,6 +35,7 @@ enum Page {
 
 export default function Claim() {
   const store = useStore();
+  const { disconnect, address, sign } = useChain(CHAIN_NAME);
 
   // which page to display
   const [page, setPage] = useState(Page.Credential);
@@ -46,11 +51,12 @@ export default function Claim() {
   const [privkeyInvalidReason, setPrivkeyInvalidReason] = useState("");
 
   // inputs - owner
-  const [owner, setOwner] = useState("");
   const [ownerValid, setOwnerValid] = useState<boolean | null>(null);
   const [ownerInvalidReason, setOwnerInvalidReason] = useState("");
 
-  // whether tx modal is open on the submit page
+  // tx broadcasting
+  const [tx, setTx] = useState<TxRaw | null>(null);
+  const [spin, setSpin] = useState<boolean>(false);
   const { isOpen: isTxModalOpen, onOpen: onTxModalOpen, onClose: onTxModalClose } = useDisclosure();
 
   // values on the preview page
@@ -228,7 +234,7 @@ export default function Claim() {
   useEffect(() => {
     function setOwnerValidNull() {
       setOwnerValid(null);
-      setOwnerInvalidReason("");
+      setOwnerInvalidReason("Please connect wallet");
       console.log("empty key");
     }
 
@@ -248,19 +254,8 @@ export default function Claim() {
     // stateless checks
     //--------------------
 
-    if (owner === "") {
+    if (!address) {
       return setOwnerValidNull();
-    }
-
-    try {
-      const { prefix } = bech32.decode(owner);
-      if (prefix !== store.networkConfig!.prefix) {
-        return setOwnerValidFalse(
-          `address has incorrect prefix: expecting ${store.networkConfig!.prefix}, found ${prefix}`
-        );
-      }
-    } catch (err) {
-      return setOwnerValidFalse(`not a valid bech32 address: ${err}`);
     }
 
     //--------------------
@@ -281,7 +276,7 @@ export default function Claim() {
     }
 
     store
-      .isOwnerEligible(Number(idStr), owner)
+      .isOwnerEligible(Number(idStr), address)
       .then((eligible) => {
         if (eligible) {
           return setOwnerValidTrue();
@@ -294,7 +289,7 @@ export default function Claim() {
           `failed to check this address' eligibility to claim badge #${idStr}: ${err}`
         );
       });
-  }, [owner, idStr, idValid, store.wasmClient]);
+  }, [address, idStr, idValid, store.wasmClient]);
 
   // if the id has been updated, we need to update the metadata displayed on the preview page
   // only update if the id is valid AND wasm client has been initialized
@@ -340,52 +335,84 @@ export default function Claim() {
     }
   }
 
-  async function getMintMsg() {
+  // when the submit button is clicked: sign the tx, then open tx modal to
+  // broadcast it
+  async function submitTx() {
+    console.log("composing and submitting tx!!");
+
+    // generate the signature
     const privKey = Buffer.from(privkeyStr, "hex");
-    const msg = `claim badge ${idStr} for user ${owner}`;
+    const msg = `claim badge ${idStr} for user ${address}`;
     const msgBytes = Buffer.from(msg, "utf8");
     const msgHashBytes = sha256(msgBytes);
     const { signature } = secp256k1.ecdsaSign(msgHashBytes, privKey);
 
+    // generate the contract execute msg
+    let executeMsg: object;
     const badge = await store.getBadge(Number(idStr));
-
     if (badge.rule === "by_keys") {
-      return {
+      executeMsg = {
         mint_by_keys: {
           id: Number(idStr),
-          owner,
+          owner: address,
           pubkey: Buffer.from(secp256k1.publicKeyCreate(privKey)).toString("hex"),
           signature: Buffer.from(signature).toString("hex"),
         },
       };
     } else if ("by_key" in badge.rule) {
-      return {
+      executeMsg = {
         mint_by_key: {
           id: Number(idStr),
-          owner,
+          owner: address,
           signature: Buffer.from(signature).toString("hex"),
         },
       };
     } else {
-      return {
-        mint_by_minter: {
-          id: Number(idStr),
-          owners: [owner],
-        },
-      };
+      throw "unsupported minting mode";
+    }
+    const executeMsgStr = JSON.stringify(executeMsg);
+    console.log("compose executeMsg:", executeMsgStr);
+    const executeMsgBytes = Buffer.from(executeMsgStr, "utf8");
+
+    // wrap the executeMsg in an MsgExecuteContract
+    // not sure what's the idiomatic way to do it, but this works
+    const sdkMsg = {
+      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+      value: MsgExecuteContract.fromPartial({
+        sender: address,
+        contract: store.networkConfig!.hub,
+        msg: executeMsgBytes,
+        funds: [],
+      }),
+    };
+
+    // sign & broadcast the msg
+    // two important points:
+    // - to use auto gas, the gas price must be set (in _app.tsx)
+    // - must use the cosmwas client (otherwise, will get "unknown message:
+    //   /cosmwas.wasm.v1.MsgExecuteContract" error)
+    try {
+      setSpin(true);
+      const tx = await sign([sdkMsg], undefined, undefined, "cosmwasm");
+      setTx(tx);
+      onTxModalOpen();
+    } catch {
+      setSpin(false);
     }
   }
 
-  // when user closes the tx modal, we reset the page: revert back to the credentials page, and
-  // empty the inputs
+  // when user closes the tx modal, we reset the page: revert back to the credentials page,
+  // empty the inputs, disconnect the wallet
   function onClosingTxModal() {
     setPage(Page.Credential);
     setIdStr("");
     setIdValid(null);
     setPrivkeyStr("");
     setPrivkeyValid(null);
-    setOwner("");
     setOwnerValid(null);
+    setSpin(false);
+    setTx(null);
+    disconnect();
     onTxModalClose();
   }
 
@@ -463,12 +490,6 @@ export default function Claim() {
             {badge?.metadata.description ?? fillerText}
           </Text>
         </Box>
-        {/* <Box>
-          <Text fontSize="sm" fontWeight="400">
-            creator
-          </Text>
-          <Text>{badge?.manager ?? fillerText}</Text>
-        </Box> */}
         <Box>
           <Text fontSize="sm" fontWeight="400">
             current supply
@@ -502,40 +523,31 @@ export default function Claim() {
   const submitPage = (
     <Box>
       <Text mb="4">3️⃣ Claim now!</Text>
-      <FormControl mb="4" isInvalid={ownerValid !== null && !ownerValid}>
-        <FormLabel>Your Stargaze address</FormLabel>
-        <Input
-          placeholder="stars1..."
-          onChange={(event) => {
-            setOwner(event.target.value);
-          }}
-        />
-        {ownerValid !== null ? (
-          ownerValid ? (
-            <FormHelperText>✅ valid address</FormHelperText>
-          ) : (
-            <FormErrorMessage>{ownerInvalidReason}</FormErrorMessage>
-          )
+      <WalletSection />
+      <Box mb="5">
+        {ownerValid ? (
+          <Box textColor="green">You are eligible to claim this badge!</Box>
         ) : (
-          <FormHelperText>
-            Unfortunately, autofill by connecting to a wallet app isn&apos;t supported yet. Please
-            copy-paste your address here.
-          </FormHelperText>
+          <Box textColor="red">{ownerInvalidReason}</Box>
         )}
-      </FormControl>
+      </Box>
       <Button variant="outline" mr="1" onClick={() => setPage(Page.Preview)}>
         Back
       </Button>
-      <Button
-        variant="outline"
-        ml="1"
-        onClick={onTxModalOpen}
-        isLoading={false}
-        isDisabled={false} // TODO
-      >
-        Submit
-      </Button>
-      <TxModal isOpen={isTxModalOpen} onClose={onClosingTxModal} getMsg={getMintMsg} />
+      {
+        ownerValid ? (
+          <Button
+            variant="outline"
+            colorScheme="green"
+            ml="1"
+            onClick={submitTx}
+            isLoading={spin}
+          >
+            Submit
+          </Button>
+        ) : null
+      }
+      <TxModal tx={tx!} isOpen={isTxModalOpen} onClose={onClosingTxModal} />
     </Box>
   );
 

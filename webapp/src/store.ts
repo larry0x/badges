@@ -1,17 +1,13 @@
-import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-import { GasPrice } from "@cosmjs/stargate";
+import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import { create } from "zustand";
 
-import { Network, NetworkConfig, NETWORK_CONFIGS, PUBLIC_ACCOUNTS } from "./configs";
+import { Network, NetworkConfig, NETWORK_CONFIGS } from "./configs";
 import { BadgeResponse, ConfigResponse, KeyResponse, OwnerResponse } from "./types";
 
 export type State = {
   networkConfig?: NetworkConfig;
 
-  wallet?: DirectSecp256k1HdWallet;
-  senderAddr?: string;
-  wasmClient?: SigningCosmWasmClient;
+  wasmClient?: CosmWasmClient;
 
   badgeCount?: number;
   badges: { [key: number]: BadgeResponse };
@@ -32,21 +28,7 @@ export const useStore = create<State>((set) => ({
     console.log("using network:", network);
     console.log("network config:", networkConfig);
 
-    // pick a random public account to use
-    const randomIndex = Math.floor(Math.random() * PUBLIC_ACCOUNTS.length);
-    const mnemonic = PUBLIC_ACCOUNTS[randomIndex]!;
-
-    const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
-      prefix: networkConfig.prefix,
-    });
-
-    const senderAddr = (await wallet.getAccounts())[0]!.address;
-
-    console.log("created wallet with address", senderAddr);
-
-    const wasmClient = await SigningCosmWasmClient.connectWithSigner(networkConfig.rpcUrl, wallet, {
-      gasPrice: GasPrice.fromString(networkConfig.gasPrices),
-    });
+    const wasmClient = await CosmWasmClient.connect(networkConfig.rpcUrl);
 
     console.log("created wasm client with RPC URL", networkConfig.rpcUrl);
 
@@ -58,8 +40,6 @@ export const useStore = create<State>((set) => ({
 
     return set({
       networkConfig,
-      wallet,
-      senderAddr,
       wasmClient,
       badgeCount: configRes.badge_count,
     });

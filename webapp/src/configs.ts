@@ -1,3 +1,6 @@
+// TODO
+export const CHAIN_NAME = "stargazetestnet";
+
 export enum Network {
   Mainnet = "mainnet",
   Testnet = "testnet",
@@ -60,25 +63,3 @@ export const NETWORK_CONFIGS: { [key in Network]: NetworkConfig } = {
     getExplorerUrl: (_txhash: string) => "", // there's no explorer for localhost
   },
 };
-
-/**
- * Since Stargaze has zero gas price, instead of having users connect their own wallets, we can
- * simply embed a few "public" wallets in the webapp, and submit txs from them.
- *
- * We use multiple accounts, and randomly choose one for submitting the tx. This is because if
- * multiple people are submitting txs in the same block, they may have account sequence mismatch
- * errors if using the same account. Having multiple account availble minimizes the likelihood of
- * this error.
- */
-export const PUBLIC_ACCOUNTS = [
-  "left physical cliff pumpkin chimney sock claim asset refuse rug neutral shrug wall obey fruit punch lunar battle harvest note merit bottom later garlic",
-  "coast keen penalty old tape winner pepper squeeze replace behave abandon master stay sample practice excite bright school pioneer cheese scale law census miracle",
-  "impulse embrace subject subway update unfair wool uniform reject weapon diesel north duty loan mother alarm shock agree lady piece spring toilet uniform disorder",
-  "bulk oil three faint hood return apart stock attract nice unfair sphere emerge obey music tray anchor vague universe bag produce limit annual father",
-  "doll bus impact chair fabric shallow impose cruise scorpion episode gallery forget ask main coyote when badge volume denial material group patient waste school",
-  "dance brush sentence can apology decade sing venue meat outdoor credit achieve hobby word crawl render kind expose resemble person gas gym evil slab",
-  "ride umbrella easy wink bamboo room unknown coconut flash effort chest scorpion pact shaft exile picnic employ ginger state road huge city reveal teach",
-  "nest inner evil tell relief base burger coral gentle wood fix shoe poem board inch list unfair more roof cry candy auto wage nerve",
-  "please enemy bleak burst recall rookie quick reduce approve ethics butter shield main expand garlic crumble parrot boy wheat key arena horn ordinary insect",
-  "conduct garden certain wash timber neglect wash useless flame pitch hint seek sound ability fever ribbon add actor people fame unlock audit core wall",
-];
