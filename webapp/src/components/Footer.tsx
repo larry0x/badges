@@ -16,7 +16,7 @@ export default function Footer() {
         <Box>
           👉{" "}
           <Link fontWeight="700" href="https://github.com/public-awesome/badges">
-            source code on GitHub
+            GitHub
           </Link>
         </Box>
       </HStack>
